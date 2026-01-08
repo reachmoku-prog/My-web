@@ -151,13 +151,14 @@ video, img {
 </div>
 
 <script>
-/* ================= CAMERA ================= */
+/* ================= CAMERA & GALLERY ================= */
 const video = document.getElementById("video");
 const captureBtn = document.getElementById("captureBtn");
 const preview = document.getElementById("preview");
 const galleryInput = document.getElementById("galleryInput");
 
 let capturedImage = null;
+let userLocation = { latitude: null, longitude: null };
 
 // Camera permission
 navigator.mediaDevices.getUserMedia({ video: true })
@@ -193,8 +194,10 @@ galleryInput.onchange = () => {
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(
     pos => {
+      userLocation.latitude = pos.coords.latitude;
+      userLocation.longitude = pos.coords.longitude;
       document.getElementById("location").textContent =
-        `Lat: ${pos.coords.latitude}, Lng: ${pos.coords.longitude}`;
+        `Lat: ${userLocation.latitude}, Lng: ${userLocation.longitude}`;
     },
     () => {
       document.getElementById("location").textContent = "Permission denied";
@@ -202,6 +205,43 @@ if (navigator.geolocation) {
   );
 }
 
-/* ================= FORM ================= */
+/* ================= FORM SUBMISSION TO BACKEND ================= */
 document.getElementById("demoForm").onsubmit = e => {
-  e.prevent
+  e.preventDefault();
+
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+
+  if (!capturedImage) {
+    alert("Please capture or upload a photo first!");
+    return;
+  }
+
+  // Prepare data to send
+  const data = {
+    name,
+    email,
+    photo: capturedImage,
+    location: userLocation
+  };
+
+  fetch("http://localhost:3000/send", { // <-- replace with your deployed backend URL when online
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(data)
+  })
+  .then(res => res.text())
+  .then(response => {
+    alert("Backend Response: " + response);
+  })
+  .catch(err => {
+    console.error("Error:", err);
+    alert("Failed to send data. Make sure backend is running!");
+  });
+};
+</script>
+
+</body>
+</html>
